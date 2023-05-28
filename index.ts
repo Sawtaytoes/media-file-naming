@@ -15,7 +15,6 @@ import {
   catchError,
   combineLatest,
   EMPTY,
-  endWith,
   filter,
   from,
   groupBy,
@@ -25,20 +24,19 @@ import {
   mergeAll,
   mergeMap,
   of,
-  partition,
-  startWith,
   take,
   tap,
-  toArray,
 } from 'rxjs'
 
 import {
   replaceAudioFormatByChannelCount,
 } from './audioHelpers'
-
 import {
-  replaceVideoFormat,
-} from './videoHelpers'
+  replaceHdrFormat,
+} from './hdrHelpers'
+import {
+  replaceResolutionName,
+} from './resolutionHelpers'
 
 process.on('uncaughtException', (exception) => {
   console.error(exception)
@@ -59,6 +57,7 @@ type Track = {
   'ChannelPositions': string,
   'Channels': string,
   'colour_primaries': string,
+  'DisplayAspectRatio': string,
   'extra': (
     Record<
       string,
@@ -91,6 +90,7 @@ export type FormattedTrack = {
   channels: string,
   channelPositions: string,
   colorSpace: string,
+  displayAspectRatio: string,
   filename: string,
   format: string,
   formatAdditionalFeatures: string,
@@ -130,7 +130,7 @@ from(
 
     // -------------------------------------
     // UNCOMMENT THIS TIME TO TEST A SINGLE FILE
-    // && filename.includes('DTS-X')
+    // && filename.includes(' {IMAX')
     // -------------------------------------
   )),
   map((
@@ -220,7 +220,7 @@ from(
   // tap(({
   //   media
   // }) => {
-  //   console.log(media.track[2])
+  //   console.log(media.track[1])
   // }),
   // -------------------------------------
   map(({
@@ -258,6 +258,7 @@ from(
     'ChannelPositions': channelPositions,
     'Channels': channels,
     'colour_primaries': colorSpace,
+    'DisplayAspectRatio': displayAspectRatio,
     'Format': format,
     'Format_AdditionalFeatures': formatAdditionalFeatures,
     'Format_Commercial_IfAny': formatCommercialIfAny,
@@ -276,6 +277,7 @@ from(
     channelPositions,
     channels,
     colorSpace,
+    displayAspectRatio,
     filename,
     format,
     formatAdditionalFeatures,
@@ -408,25 +410,32 @@ from(
           }) => ({
             bitDepth,
             colorSpace,
+            height,
             hdrFormat,
-            resolution: `${width}x${height}`,
             filename,
             title,
             type,
+            width,
           })),
-          map<
-            FormattedTrack,
-            {
-              nextFilename: string,
-              previousFilename: string,
-            }
-          >(({
+          map(({
+            colorSpace,
             filename,
+            hdrFormat,
+            height,
+            width,
           }) => ({
             nextFilename: (
-              replaceVideoFormat(
-                filename,
-              )
+              replaceResolutionName({
+                filename: (
+                  replaceHdrFormat({
+                    colorSpace,
+                    filename,
+                    hdrFormat,
+                  })
+                ),
+                height,
+                width,
+              })
             ),
             previousFilename: filename,
           })),
@@ -462,7 +471,7 @@ from(
   // -------------------------------------
   // UNCOMMENT THIS TO SAFELY DEBUG CHANGES
   // -------------------------------------
-  ignoreElements(),
+  // ignoreElements(),
   // -------------------------------------
   map(({
     nextFilename,
