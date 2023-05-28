@@ -125,8 +125,6 @@ from(
     filename,
   ) => (
     filename !== "[CableLabs] Life Untouched {4K HDR10 & Mono}.mkv"
-    && !filename.includes('Auro-3D')
-    && !filename.includes('Trinnov')
 
     // -------------------------------------
     // UNCOMMENT THIS TIME TO TEST A SINGLE FILE
@@ -324,6 +322,12 @@ from(
             type,
           }) => (
             type === 'Audio'
+          )),
+          filter(({
+            filename,
+          }) => (
+            !filename.includes('Auro-3D')
+            && !(filename.includes('Trinnov') && filename.includes('DTS-X'))
           )),
           map(({
             channelLayout,
