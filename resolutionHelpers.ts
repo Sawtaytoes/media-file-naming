@@ -6,8 +6,8 @@ export const formatResolutionName = ({
   width: string,
 }) => {
   if (
-    Number(width) >= 3840
-    && Number(width) <= 4000
+    Number(width) >= 3800
+    && Number(width) <= 4100
   ) {
     if (
       Number(height) >= 1500
@@ -29,8 +29,6 @@ export const formatResolutionName = ({
     ) {
       return '4K'
     }
-
-    console.log({height, width, dar: Number(width)/Number(height)})
   }
 
   if (
@@ -56,8 +54,13 @@ export const formatResolutionName = ({
     ) {
       return 'FHD'
     }
+  }
 
-    console.log({height, width, dar: Number(width)/Number(height)})
+  if (
+    width === '1440'
+    && height === '1080'
+  ) {
+    return 'FHD'
   }
 
   if (
@@ -66,8 +69,6 @@ export const formatResolutionName = ({
     if (height === '720') {
       return 'HD'
     }
-
-    console.log({height, width, dar: Number(width)/Number(height)})
   }
 
   if (
@@ -75,6 +76,11 @@ export const formatResolutionName = ({
     && Number(height) <= 1440
   ) {
     return 'QHD'
+  }
+  if (
+    height === '576'
+  ) {
+    return 'D-1'
   }
 
   if (
@@ -84,10 +90,13 @@ export const formatResolutionName = ({
   }
 
   if (
-    height === '576'
+    Number(height) >= 360
+    && Number(height) <= 420
   ) {
-    return 'D-1'
+    return 'nHD'
   }
+
+  console.log({height, width, dar: Number(width)/Number(height)})
 
   return width.concat('x', height)
 }
