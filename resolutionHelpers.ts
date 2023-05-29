@@ -113,7 +113,7 @@ export const replaceResolutionName = ({
 }) => (
   filename
   .replace(
-    /(.+){(IMAX )?.+ (.+)( & .+})/,
+    /(.+){(IMAX )?.+? (.+)( & .+})/,
     '$1'
     .concat(
       "{$2",

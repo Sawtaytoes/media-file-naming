@@ -4,102 +4,111 @@ export const formatHdrName = ({
   hdrFormatString,
   transferCharacteristics,
 }: {
-  hdrFormatCompatibility: string,
-  hdrFormat: string,
-  hdrFormatString: string,
-  transferCharacteristics: string,
-}) => {
-  if (
-    transferCharacteristics
-    === 'HLG'
-  ) {
-    return 'HLG'
-  }
-
-  return (
-    [
+  hdrFormatCompatibility?: string,
+  hdrFormat?: string,
+  hdrFormatString?: string,
+  transferCharacteristics?: string,
+}) => (
+  [
+    (
       (
         (
-          hdrFormat
+          hdrFormatString
+          || hdrFormat
+        )
+        ?.includes(
+          'Dolby Vision'
+        )
+      )
+      && 'DoVi'
+    ),
+    (
+      (
+        (
+          (
+            hdrFormatString
+            || hdrFormat
+          )
           ?.includes(
-            'Dolby Vision'
+            'SMPTE ST 2094'
           )
         )
-        && 'DoVi'
-      ),
+        || (
+          hdrFormatCompatibility
+          ?.includes(
+            'HDR10+'
+          )
+        )
+      )
+      && 'HDR10+'
+    ),
+    (
+      (
+        transferCharacteristics
+        ?.includes('HLG')
+      )
+      && 'HLG'
+    ),
+    (
       (
         (
           (
-            hdrFormat
-            ?.includes(
-              'SMPTE ST 2094'
-            )
+            hdrFormatString
+            || hdrFormat
           )
-          || (
-            hdrFormatCompatibility
-            ?.includes(
-              'HDR10+'
-            )
+          ?.includes(
+            'SMPTE ST 2086'
           )
         )
-        && 'HDR10+'
-      ),
-      (
-        (
-          (
-            hdrFormat
-            ?.includes(
-              'SMPTE ST 2086'
-            )
-          )
-          || (
-            hdrFormatCompatibility
-            === 'HDR10'
-          )
-          || (
-            hdrFormatCompatibility
-            .endsWith('HDR10')
-          )
+        || (
+          hdrFormatCompatibility
+          === 'HDR10'
         )
-        && 'HDR10'
-      ),
-    ]
-    .filter(Boolean)
-    .join(' ')
-  )
-}
+        || (
+          hdrFormatCompatibility
+          ?.endsWith('HDR10')
+        )
+      )
+      && 'HDR10'
+    ),
+  ]
+  .filter(Boolean)
+  .join(' ')
+)
 
 export const replaceHdrFormat = ({
-  colorSpace,
   filename,
   hdrFormatCompatibility,
   hdrFormat,
-  hdrFormatString,
   transferCharacteristics,
 }: {
-  colorSpace: string,
   filename: string,
-  hdrFormatCompatibility: string,
-  hdrFormat: string,
-  hdrFormatString: string,
-  transferCharacteristics: string,
+  hdrFormatCompatibility?: string,
+  hdrFormat?: string,
+  transferCharacteristics?: string,
 }) => (
   filename
   .replace(
-    /(.+)({\w+).+( & .+})/,
-    '$1$2'
+    /(.+){(IMAX )?(.+?) .+( & .+})/,
+    '$1{$2$3'
     .concat(
       " ",
       (
         formatHdrName({
           hdrFormatCompatibility,
           hdrFormat,
-          hdrFormatString,
           transferCharacteristics,
         })
-        || 'SDR'
+        || (
+          (
+            transferCharacteristics
+            === 'PQ'
+          )
+          ? 'HDR10'
+          : 'SDR'
+        )
       ),
-      '$3',
+      '$4',
     )
   )
 )
