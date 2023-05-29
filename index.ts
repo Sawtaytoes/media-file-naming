@@ -456,7 +456,7 @@ from(
   // -------------------------------------
   // UNCOMMENT THIS TO SAFELY DEBUG CHANGES
   // -------------------------------------
-  ignoreElements(),
+  // ignoreElements(),
   // -------------------------------------
   map(({
     nextFilename,

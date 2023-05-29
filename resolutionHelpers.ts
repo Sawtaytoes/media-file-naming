@@ -10,50 +10,33 @@ export const formatResolutionName = ({
     && Number(width) <= 4100
   ) {
     if (
-      Number(height) >= 1500
-      && Number(height) <= 1700
+      Number(height) >= 1600
+      && Number(height) <= 1620
     ) {
       return 'WQHD+'
     }
 
     if (
-      Number(height) >= 1700
-      && Number(height) <= 2060
-    ) {
-      return 'H4K'
-    }
-
-    if (
-      Number(height) >= 2060
+      Number(height) >= 2156
       && Number(height) <= 2160
     ) {
       return '4K'
     }
+
+    return '4K'.concat(' ', (Number(width)/Number(height)).toFixed(2))
   }
 
   if (
     width === '1920'
   ) {
     if (
-      Number(height) >= 780
-      && Number(height) <= 939
+      Number(height) >= 1076
+      && Number(height) <= 1086
     ) {
-      return 'UWXGA'
+      return 'FHD'
     }
 
-    if (
-      Number(height) >= 940
-      && Number(height) <= 1050
-    ) {
-      return 'UWHD'
-    }
-
-    if (
-      Number(height) >= 1050
-      && Number(height) <= 1100
-    ) {
-      return 'FHD' // TODO: Add aspect ratio rather than changing FHD to a non-exact value.
-    }
+    return 'FHD'.concat(' ', (Number(width)/Number(height)).toFixed(2))
   }
 
   if (
@@ -79,22 +62,21 @@ export const formatResolutionName = ({
   }
 
   if (
-    height === '576'
-  ) {
-    return 'D-1' // TODO: Merge this with 480p and make it simply "SD".
-  }
-
-  if (
     height === '480'
+    || height === '576'
   ) {
-    return 'WVGA'
+    if (width === '720') {
+      return 'SD'
+    }
+
+    return 'SD'.concat(' ', (Number(width)/Number(height)).toFixed(2))
   }
 
   if (
     Number(height) >= 360
     && Number(height) <= 420
   ) {
-    return 'nHD'
+    return 'nHD'.concat(' ', (Number(width)/Number(height)).toFixed(2))
   }
 
   console.log({height, width, dar: Number(width)/Number(height)})
