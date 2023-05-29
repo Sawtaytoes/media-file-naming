@@ -67,12 +67,15 @@ type Track = {
   'Format_AdditionalFeatures': string,
   'Format_Commercial_IfAny': string,
   'Format_Commercial': string,
-  'Format': string,
   'Format_Settings_Mode': string,
+  'Format': string,
   'Format/Info': string,
-  'HDR_Format/String': string,
+  'HDR_Format_Compatibility'?: string,
+  'HDR_Format'?: string,
+  'HDR_Format/String'?: string,
   'Height': string,
   'Title': string,
+  'transfer_characteristics'?: string,
   'Width': string,
 }
 
@@ -98,9 +101,12 @@ export type FormattedTrack = {
   formatCommercialIfAny: string,
   formatInfo: string,
   formatSettingsMode: string,
-  hdrFormat: string,
+  hdrFormat?: string,
+  hdrFormatCompatibility?: string,
+  hdrFormatString?: string,
   height: string,
   title: string,
+  transferCharacteristics?: string,
   type: string,
   typeOrder: string,
   width: string,
@@ -125,10 +131,9 @@ from(
     filename,
   ) => (
     filename !== "[CableLabs] Life Untouched {4K HDR10 & Mono}.mkv"
-
     // -------------------------------------
     // UNCOMMENT THIS TIME TO TEST A SINGLE FILE
-    // && filename.includes(' {IMAX')
+    // && filename.startsWith('[LG]')
     // -------------------------------------
   )),
   map((
@@ -144,43 +149,26 @@ from(
   mergeMap((
     filename,
   ) => (
-    combineLatest([
-      (
-        of(
-          filename
-        )
-      ),
-      (
-        from(
-          stat(
-            filename
-          )
-        )
-        .pipe(
-          map((
-            stats,
-          ) => ({
-            isFile: stats.isFile(),
-          })),
-        )
-      ),
-    ])
+    from(
+      stat(
+        filename
+      )
+    )
+    .pipe(
+      filter((
+        stats
+      ) => (
+        stats
+        .isFile()
+      )),
+      map(() => (
+        filename
+      )),
+    )
   )),
-  map(([
+  map((
     filename,
-    fileStats,
-  ]) => ({
-    ...fileStats,
-    filename,
-  })),
-  filter(({
-    isFile,
-  }) => (
-    isFile
-  )),
-  map(({
-    filename,
-  }) => (
+  ) => (
     execFile(
       'MediaInfo_CLI_23.04_Windows_x64/MediaInfo.exe',
       [
@@ -226,6 +214,7 @@ from(
   }: (
     MediaInfo
   )) => (
+    // TODO: Make this a `from()` as part of a later cleanup to fix the parallelism issue where a file needs to rename both audio and video.
     media
     .track
     .map((
@@ -263,9 +252,12 @@ from(
     'Format_Commercial': formatCommercial,
     'Format_Settings_Mode': formatSettingsMode,
     'Format/Info': formatInfo,
-    'HDR_Format/String': hdrFormat,
+    'HDR_Format_Compatibility': hdrFormatCompatibility,
+    'HDR_Format': hdrFormat,
+    'HDR_Format/String': hdrFormatString,
     'Height': height,
     'Title': title,
+    'transfer_characteristics': transferCharacteristics,
     'Width': width,
     filename,
   }) => ({
@@ -283,9 +275,12 @@ from(
     formatCommercialIfAny,
     formatInfo,
     formatSettingsMode,
+    hdrFormatCompatibility,
     hdrFormat,
+    hdrFormatString,
     height,
     title,
+    transferCharacteristics,
     type,
     typeOrder,
     width,
@@ -327,54 +322,34 @@ from(
             filename,
           }) => (
             !filename.includes('Auro-3D')
-            && !(filename.includes('Trinnov') && filename.includes('DTS-X'))
+            && !(
+              filename.includes('Trinnov')
+              && filename.includes('DTS-X')
+            )
           )),
           map(({
             channelLayout,
             channelLayoutOriginal,
-            channelPositions,
-            channels,
             filename,
             format,
             formatAdditionalFeatures,
             formatCommercial,
             formatCommercialIfAny,
-            formatInfo,
-            formatSettingsMode,
-            title,
-            type,
-          }) => ({
-            channelLayout: (
-              channelLayoutOriginal
-              || channelLayout
-            ),
-            channelPositions,
-            channels,
-            formatAdditionalFeatures,
-            formatCommercial: (
-              formatCommercialIfAny
-              || formatCommercial
-              || format
-            ),
-            formatInfo,
-            formatSettingsMode,
-            filename,
-            title,
-            type,
-          })),
-          map(({
-            channelLayout,
-            filename,
-            formatAdditionalFeatures,
-            formatCommercial,
             formatSettingsMode,
           }) => ({
             nextFilename: (
               replaceAudioFormatByChannelCount({
-                channelLayout,
+                channelLayout: (
+                  channelLayoutOriginal
+                  || channelLayout
+                ),
                 filename,
                 formatAdditionalFeatures,
-                formatCommercial,
+                formatCommercial: (
+                  formatCommercialIfAny
+                  || formatCommercial
+                  || format
+                ),
                 formatSettingsMode,
               })
             ),
@@ -403,29 +378,13 @@ from(
             type === 'Video'
           )),
           map(({
-            bitDepth,
             colorSpace,
             filename,
+            hdrFormatCompatibility,
             hdrFormat,
+            hdrFormatString,
             height,
-            title,
-            type,
-            width,
-          }) => ({
-            bitDepth,
-            colorSpace,
-            height,
-            hdrFormat,
-            filename,
-            title,
-            type,
-            width,
-          })),
-          map(({
-            colorSpace,
-            filename,
-            hdrFormat,
-            height,
+            transferCharacteristics,
             width,
           }) => ({
             nextFilename: (
@@ -434,7 +393,10 @@ from(
                   replaceHdrFormat({
                     colorSpace,
                     filename,
+                    hdrFormatCompatibility,
                     hdrFormat,
+                    hdrFormatString,
+                    transferCharacteristics,
                   })
                 ),
                 height,
@@ -475,7 +437,7 @@ from(
   // -------------------------------------
   // UNCOMMENT THIS TO SAFELY DEBUG CHANGES
   // -------------------------------------
-  // ignoreElements(),
+  ignoreElements(),
   // -------------------------------------
   map(({
     nextFilename,
