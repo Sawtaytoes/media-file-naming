@@ -26,6 +26,7 @@ import {
   of,
   take,
   tap,
+  toArray,
 } from 'rxjs'
 
 import {
@@ -72,7 +73,6 @@ type Track = {
   'Format/Info': string,
   'HDR_Format_Compatibility'?: string,
   'HDR_Format'?: string,
-  'HDR_Format/String'?: string,
   'Height': string,
   'Title': string,
   'transfer_characteristics'?: string,
@@ -92,7 +92,6 @@ export type FormattedTrack = {
   channelLayoutOriginal: string,
   channels: string,
   channelPositions: string,
-  colorSpace: string,
   displayAspectRatio: string,
   filename: string,
   format: string,
@@ -103,7 +102,6 @@ export type FormattedTrack = {
   formatSettingsMode: string,
   hdrFormat?: string,
   hdrFormatCompatibility?: string,
-  hdrFormatString?: string,
   height: string,
   title: string,
   transferCharacteristics?: string,
@@ -214,211 +212,232 @@ from(
   }: (
     MediaInfo
   )) => (
-    // TODO: Make this a `from()` as part of a later cleanup to fix the parallelism issue where a file needs to rename both audio and video.
-    media
-    .track
-    .map((
-      track,
-    ) => ({
-      ...track,
-      filename: (
-        media
-        ['@ref']
-      ),
-    }))
+    from(
+      media
+      .track
+      .map((
+        track,
+      ) => ({
+        ...track,
+        filename: (
+          media
+          ['@ref']
+        ),
+      }))
+    )
+    .pipe(
+      map<
+        (
+          Track
+          & {
+            filename: string,
+          }
+        ),
+        FormattedTrack
+      >(({
+        '@type': type,
+        '@typeorder': typeOrder,
+        'BitDepth': bitDepth,
+        'ChannelLayout_Original': channelLayoutOriginal,
+        'ChannelLayout': channelLayout,
+        'ChannelPositions': channelPositions,
+        'Channels': channels,
+        'DisplayAspectRatio': displayAspectRatio,
+        'Format': format,
+        'Format_AdditionalFeatures': formatAdditionalFeatures,
+        'Format_Commercial_IfAny': formatCommercialIfAny,
+        'Format_Commercial': formatCommercial,
+        'Format_Settings_Mode': formatSettingsMode,
+        'Format/Info': formatInfo,
+        'HDR_Format_Compatibility': hdrFormatCompatibility,
+        'HDR_Format': hdrFormat,
+        'Height': height,
+        'Title': title,
+        'transfer_characteristics': transferCharacteristics,
+        'Width': width,
+        filename,
+      }) => ({
+        bitDepth,
+        channelLayout,
+        channelLayoutOriginal,
+        channelPositions,
+        channels,
+        displayAspectRatio,
+        filename,
+        format,
+        formatAdditionalFeatures,
+        formatCommercial,
+        formatCommercialIfAny,
+        formatInfo,
+        formatSettingsMode,
+        hdrFormatCompatibility,
+        hdrFormat,
+        height,
+        title,
+        transferCharacteristics,
+        type,
+        typeOrder,
+        width,
+      })),
+      filter<
+        FormattedTrack
+      >(({
+        typeOrder,
+      }) => (
+        (
+          typeOrder
+          && typeOrder === '1'
+        )
+        || !typeOrder
+      )),
+      groupBy<
+        FormattedTrack,
+        string
+      >(({
+        type,
+      }) => (
+        type
+      )),
+      mergeMap((
+        group$,
+      ) => (
+        merge(
+          (
+            group$
+            .pipe(
+              filter<
+                FormattedTrack
+              >(({
+                type,
+              }) => (
+                type === 'Audio'
+              )),
+              filter(({
+                filename,
+              }) => (
+                !filename.includes('Auro-3D')
+                && !(
+                  filename.includes('Trinnov')
+                  && filename.includes('DTS-X')
+                )
+              )),
+              map(({
+                channelLayout,
+                channelLayoutOriginal,
+                format,
+                formatAdditionalFeatures,
+                formatCommercial,
+                formatCommercialIfAny,
+                formatSettingsMode,
+              }) => (
+                (
+                  filename: string,
+                ) => (
+                  replaceAudioFormatByChannelCount({
+                    channelLayout: (
+                      channelLayoutOriginal
+                      || channelLayout
+                    ),
+                    filename,
+                    formatAdditionalFeatures,
+                    formatCommercial: (
+                      formatCommercialIfAny
+                      || formatCommercial
+                      || format
+                    ),
+                    formatSettingsMode,
+                  })
+                )
+              )),
+              catchError((
+                error,
+              ) => {
+                console
+                .error(
+                  error
+                )
+
+                return EMPTY
+              }),
+            )
+          ),
+          (
+            group$
+            .pipe(
+              filter<
+                FormattedTrack
+              >(({
+                type,
+              }) => (
+                type === 'Video'
+              )),
+              map(({
+                hdrFormatCompatibility,
+                hdrFormat,
+                height,
+                transferCharacteristics,
+                width,
+              }) => (
+                (
+                  filename: string,
+                ) => (
+                  replaceResolutionName({
+                    filename: (
+                      replaceHdrFormat({
+                        filename,
+                        hdrFormatCompatibility,
+                        hdrFormat,
+                        transferCharacteristics,
+                      })
+                    ),
+                    height,
+                    width,
+                  })
+                )
+              )),
+              catchError((
+                error,
+              ) => {
+                console
+                .error(
+                  error
+                )
+
+                return EMPTY
+              }),
+            )
+          ),
+        )
+      )),
+      toArray(),
+      map((
+        renamingFunctions
+      ) => ({
+        nextFilename: (
+          renamingFunctions
+          .reduce(
+            (
+              filename,
+              renamingFunction
+            ) => (
+              renamingFunction(
+                filename
+              )
+            ),
+            (
+              media
+              ['@ref']
+            ),
+          )
+        ),
+        previousFilename: (
+          media
+          ['@ref']
+        ),
+      })),
+    )
   )),
   mergeAll(),
-  map<
-    (
-      Track
-      & {
-        filename: string,
-      }
-    ),
-    FormattedTrack
-  >(({
-    '@type': type,
-    '@typeorder': typeOrder,
-    'BitDepth': bitDepth,
-    'ChannelLayout_Original': channelLayoutOriginal,
-    'ChannelLayout': channelLayout,
-    'ChannelPositions': channelPositions,
-    'Channels': channels,
-    'colour_primaries': colorSpace,
-    'DisplayAspectRatio': displayAspectRatio,
-    'Format': format,
-    'Format_AdditionalFeatures': formatAdditionalFeatures,
-    'Format_Commercial_IfAny': formatCommercialIfAny,
-    'Format_Commercial': formatCommercial,
-    'Format_Settings_Mode': formatSettingsMode,
-    'Format/Info': formatInfo,
-    'HDR_Format_Compatibility': hdrFormatCompatibility,
-    'HDR_Format': hdrFormat,
-    'HDR_Format/String': hdrFormatString,
-    'Height': height,
-    'Title': title,
-    'transfer_characteristics': transferCharacteristics,
-    'Width': width,
-    filename,
-  }) => ({
-    bitDepth,
-    channelLayout,
-    channelLayoutOriginal,
-    channelPositions,
-    channels,
-    colorSpace,
-    displayAspectRatio,
-    filename,
-    format,
-    formatAdditionalFeatures,
-    formatCommercial,
-    formatCommercialIfAny,
-    formatInfo,
-    formatSettingsMode,
-    hdrFormatCompatibility,
-    hdrFormat,
-    hdrFormatString,
-    height,
-    title,
-    transferCharacteristics,
-    type,
-    typeOrder,
-    width,
-  })),
-  filter<
-    FormattedTrack
-  >(({
-    typeOrder,
-  }) => (
-    (
-      typeOrder
-      && typeOrder === '1'
-    )
-    || !typeOrder
-  )),
-  groupBy<
-    FormattedTrack,
-    string
-  >(({
-    type,
-  }) => (
-    type
-  )),
-  mergeMap((
-    group$,
-  ) => (
-    merge(
-      (
-        group$
-        .pipe(
-          filter<
-            FormattedTrack
-          >(({
-            type,
-          }) => (
-            type === 'Audio'
-          )),
-          filter(({
-            filename,
-          }) => (
-            !filename.includes('Auro-3D')
-            && !(
-              filename.includes('Trinnov')
-              && filename.includes('DTS-X')
-            )
-          )),
-          map(({
-            channelLayout,
-            channelLayoutOriginal,
-            filename,
-            format,
-            formatAdditionalFeatures,
-            formatCommercial,
-            formatCommercialIfAny,
-            formatSettingsMode,
-          }) => ({
-            nextFilename: (
-              replaceAudioFormatByChannelCount({
-                channelLayout: (
-                  channelLayoutOriginal
-                  || channelLayout
-                ),
-                filename,
-                formatAdditionalFeatures,
-                formatCommercial: (
-                  formatCommercialIfAny
-                  || formatCommercial
-                  || format
-                ),
-                formatSettingsMode,
-              })
-            ),
-            previousFilename: filename,
-          })),
-          catchError((
-            error,
-          ) => {
-            console
-            .error(
-              error
-            )
-
-            return EMPTY
-          }),
-        )
-      ),
-      (
-        group$
-        .pipe(
-          filter<
-            FormattedTrack
-          >(({
-            type,
-          }) => (
-            type === 'Video'
-          )),
-          map(({
-            colorSpace,
-            filename,
-            hdrFormatCompatibility,
-            hdrFormat,
-            hdrFormatString,
-            height,
-            transferCharacteristics,
-            width,
-          }) => ({
-            nextFilename: (
-              replaceResolutionName({
-                filename: (
-                  replaceHdrFormat({
-                    colorSpace,
-                    filename,
-                    hdrFormatCompatibility,
-                    hdrFormat,
-                    hdrFormatString,
-                    transferCharacteristics,
-                  })
-                ),
-                height,
-                width,
-              })
-            ),
-            previousFilename: filename,
-          })),
-          catchError((
-            error,
-          ) => {
-            console
-            .error(
-              error
-            )
-
-            return EMPTY
-          }),
-        )
-      ),
-    )
-  )),
   filter(({
     nextFilename,
     previousFilename,
