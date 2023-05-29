@@ -52,7 +52,7 @@ export const formatResolutionName = ({
       Number(height) >= 1050
       && Number(height) <= 1100
     ) {
-      return 'FHD'
+      return 'FHD' // TODO: Add aspect ratio rather than changing FHD to a non-exact value.
     }
   }
 
@@ -77,10 +77,11 @@ export const formatResolutionName = ({
   ) {
     return 'QHD'
   }
+
   if (
     height === '576'
   ) {
-    return 'D-1'
+    return 'D-1' // TODO: Merge this with 480p and make it simply "SD".
   }
 
   if (
