@@ -10,13 +10,6 @@ export const formatResolutionName = ({
     && Number(width) <= 4100
   ) {
     if (
-      Number(height) >= 1600
-      && Number(height) <= 1620
-    ) {
-      return 'WQHD+'
-    }
-
-    if (
       Number(height) >= 2156
       && Number(height) <= 2160
     ) {
