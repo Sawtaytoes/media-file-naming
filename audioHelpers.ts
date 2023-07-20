@@ -119,115 +119,130 @@ export const replaceAudioFormat = ({
 
 export const replaceAudioFormatByChannelCount = ({
   channelLayout,
+  channels,
   filename,
   formatAdditionalFeatures,
   formatCommercial,
   formatSettingsMode,
 }: {
   channelLayout: string,
+  channels: string,
   filename: string,
   formatAdditionalFeatures: string,
   formatCommercial: string,
   formatSettingsMode: string,
 }) => {
   if (
-    !(
-      formatCommercial
-      ?.includes('Atmos')
-    )
-    && (
-      channelLayout
-    )
+    formatCommercial
+    ?.includes('Atmos')
   ) {
-    if (
-      formatSettingsMode === 'Dolby Surround'
-    ) {
-      return (
-        replaceAudioFormat({
-          channelCount: '4.0',
-          codecName: (
-            formatCommercial
-            .concat(
-              ' Surround'
-            )
-          ),
-          filename,
-        })
-      )
-    }
+    return (
+      replaceAudioFormat({
+        channelCount: '',
+        codecName: (
+          formatCommercial
+          .replace(
+            /Dolby (.+) with Dolby Atmos/,
+            'Dolby Atmos $1'
+          )
+        ),
+        filename,
+      })
+    )
+  }
 
-    if (
-      formatSettingsMode === 'Dolby Surround EX'
-    ) {
-      return (
-        replaceAudioFormat({
-          channelCount: '7.1',
-          codecName: 'Dolby Digital Surround EX',
-          filename,
-        })
-      )
-    }
+  if (
+    formatSettingsMode === 'Dolby Surround'
+  ) {
+    return (
+      replaceAudioFormat({
+        channelCount: '4.0',
+        codecName: (
+          formatCommercial
+          .concat(
+            ' Surround'
+          )
+        ),
+        filename,
+      })
+    )
+  }
 
-    if (
-      formatAdditionalFeatures === 'ES'
-    ) {
-      return (
-        replaceAudioFormat({
-          channelCount: '6.1',
-          codecName: 'DTS-ES HRA Matrix',
-          filename,
-        })
-      )
-    }
+  if (
+    formatSettingsMode === 'Dolby Surround EX'
+  ) {
+    return (
+      replaceAudioFormat({
+        channelCount: '7.1',
+        codecName: 'Dolby Digital Surround EX',
+        filename,
+      })
+    )
+  }
 
-    if (
-      formatAdditionalFeatures === 'ES XLL'
-    ) {
-      return (
-        replaceAudioFormat({
-          channelCount: '6.1',
-          codecName: 'DTS-ES MA Matrix',
-          filename,
-        })
-      )
-    }
+  if (
+    formatAdditionalFeatures === 'ES'
+  ) {
+    return (
+      replaceAudioFormat({
+        channelCount: '6.1',
+        codecName: 'DTS-ES HRA Matrix',
+        filename,
+      })
+    )
+  }
 
-    if (
-      formatAdditionalFeatures === 'ES XCh XLL'
-    ) {
-      return (
-        replaceAudioFormat({
-          channelCount: '6.1',
-          codecName: 'DTS-ES MA Discrete',
-          filename,
-        })
-      )
-    }
+  if (
+    formatAdditionalFeatures === 'ES XLL'
+  ) {
+    return (
+      replaceAudioFormat({
+        channelCount: '6.1',
+        codecName: 'DTS-ES MA Matrix',
+        filename,
+      })
+    )
+  }
 
-    if (
-      formatAdditionalFeatures === 'XLL X'
-    ) {
-      return (
-        replaceAudioFormat({
-          channelCount: '',
-          codecName: 'DTS-X',
-          filename,
-        })
-      )
-    }
+  if (
+    formatAdditionalFeatures === 'ES XCh XLL'
+  ) {
+    return (
+      replaceAudioFormat({
+        channelCount: '6.1',
+        codecName: 'DTS-ES MA Discrete',
+        filename,
+      })
+    )
+  }
 
-    if (
-      formatAdditionalFeatures === 'XLL X IMAX'
-    ) {
-      return (
-        replaceAudioFormat({
-          channelCount: '',
-          codecName: 'IMAX Enhanced DTS-X',
-          filename,
-        })
-      )
-    }
+  if (
+    formatAdditionalFeatures === 'XLL X'
+  ) {
+    return (
+      replaceAudioFormat({
+        channelCount: '',
+        codecName: 'DTS-X',
+        filename,
+      })
+    )
+  }
 
+  if (
+    formatAdditionalFeatures === 'XLL X IMAX'
+  ) {
+    return (
+      replaceAudioFormat({
+        channelCount: '',
+        codecName: 'IMAX Enhanced DTS-X',
+        filename,
+      })
+    )
+  }
+
+  if (
+    channelLayout
+  ) {
     return (
       replaceAudioFormat({
         channelCount: (
@@ -262,5 +277,53 @@ export const replaceAudioFormatByChannelCount = ({
     )
   }
 
-  return filename
+  if (
+    channels
+  ) {
+    return (
+      replaceAudioFormat({
+        channelCount: (
+          (
+            (
+              Number(
+                channels
+              )
+            )
+            >= 6
+          )
+          ? (
+            String(
+              Number(
+                channels
+              )
+              - 1
+            )
+            .concat(
+              ".1"
+            )
+          )
+          : (
+            String(
+              Number(
+                channels
+              )
+            )
+            .concat(
+              ".0"
+            )
+          )
+        ),
+        codecName: formatCommercial,
+        filename,
+      })
+    )
+  }
+
+  return (
+    replaceAudioFormat({
+      channelCount: '2.0',
+      codecName: formatCommercial,
+      filename,
+    })
+  )
 }

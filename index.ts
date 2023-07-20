@@ -125,15 +125,15 @@ from(
 )
 .pipe(
   mergeAll(),
-  filter((
-    filename,
-  ) => (
-    filename !== "[CableLabs] Life Untouched {4K HDR10 & Mono}.mkv"
-    // -------------------------------------
-    // UNCOMMENT THIS TIME TO TEST A SINGLE FILE
-    // && filename.startsWith('[LG]')
-    // -------------------------------------
-  )),
+  // filter((
+  //   filename,
+  // ) => (
+  //   filename
+  //   // -------------------------------------
+  //   // UNCOMMENT THIS TIME TO TEST A SINGLE FILE
+  //   // && filename.startsWith('The Rock')
+  //   // -------------------------------------
+  // )),
   map((
     filename,
   ) => (
@@ -168,7 +168,7 @@ from(
     filename,
   ) => (
     execFile(
-      'MediaInfo_CLI_23.04_Windows_x64/MediaInfo.exe',
+      'MediaInfo_CLI_23.07_Windows_x64/MediaInfo.exe',
       [
         '--Output=JSON',
         filename,
@@ -204,7 +204,8 @@ from(
   // tap(({
   //   media
   // }) => {
-  //   console.log(media.track[1])
+  //   console.log(media.track[1]) // Video
+  //   console.log(media.track[2]) // Audio
   // }),
   // -------------------------------------
   map(({
@@ -324,6 +325,7 @@ from(
               map(({
                 channelLayout,
                 channelLayoutOriginal,
+                channels,
                 format,
                 formatAdditionalFeatures,
                 formatCommercial,
@@ -338,6 +340,7 @@ from(
                       channelLayoutOriginal
                       || channelLayout
                     ),
+                    channels,
                     filename,
                     formatAdditionalFeatures,
                     formatCommercial: (
