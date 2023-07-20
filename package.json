@@ -2,6 +2,7 @@
   "name": "media-file-naming",
   "packageManager": "yarn@3.5.1",
   "scripts": {
+    "rename-movie-demos": "ts-node renameMovieDownloads.ts",
     "start": "ts-node index.ts"
   },
   "devDependencies": {
